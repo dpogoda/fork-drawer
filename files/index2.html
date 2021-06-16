@@ -1,0 +1,344 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+  <meta name="viewport" content="user-scalable=no,initial-scale=1.0,maximum-scale=1.0" />
+
+  <style>
+    html, body {margin: 0; padding: 0; height: 100%}
+    body { margin:0px; background-color: #000; justify-content: center; display: flex; padding-top: 10px; }
+    #main { margin: 10px auto 0px auto; }
+    #check { width: 100px; height: 50px; border-radius: 10px; border: 1px solid transparent; background: #48c774; color: white; cursor: pointer; }
+    #clear { width: 100px; height: 50px; border-radius: 10px; border: 1px solid transparent; background: #363636; color: white; cursor: pointer; }
+
+    .disabled {
+      background: #444;
+    }
+
+    #danckel {
+      position:  absolute;
+      top: -250px;
+      background-image: url('http://fork-drawer.vercel.app/files/danckelman.png');
+      z-index: 1;
+      width: 212px;
+      height: 250px;
+    }
+
+    @-webkit-keyframes fadeIn {
+      from { top: -250px; }
+      to { top: 0px; }
+    }
+    @keyframes fadeIn {
+      from { top: -250px; }
+      to { top: 0px; }
+    }
+
+    @-webkit-keyframes fadeOut {
+      from { top: 0px; }
+      to { top: -250px; }
+    }
+    @keyframes fadeOut {
+      from { top: 0px; }
+      to { top: -250px; }
+    }
+
+    @-webkit-keyframes displayText {
+      from { opacity: 0; }
+      to {opacity: 1;}
+    }
+    @keyframes hideText {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    .showText {
+      -webkit-animation:  displayText .2s;
+      animation: displayText .2s;
+      animation-fill-mode: forwards;
+      animation-delay: 0.5s;
+    }
+
+    .hideText {
+      -webkit-animation:  hideText .2s;
+      animation: hideText .2s;
+      animation-fill-mode: forwards;
+      animation-delay: 2s;
+    }
+
+    .showDanckel {
+      -webkit-animation: fadeIn 1s;
+      animation: fadeIn 1s;
+      animation-fill-mode: forwards;
+    }
+
+    .hideDanckel {
+      -webkit-animation: fadeOut 1s;
+      animation: fadeOut 1s;
+      animation-fill-mode: forwards; 
+    }
+
+    #text {
+      position:  absolute;
+      top: 200px;
+      background-color: white;
+      z-index: 1;
+      width: 212px;
+      height: 50px;
+      border:  1px solid black;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position:  50px;
+      opacity: 0;
+    }
+
+  </style>
+  
+</head> 
+<body>
+    <div id="danckel">
+      <div id="text">
+      </div>
+    </div>
+    <div style="background-color: #50055E66;display: flex; justify-content: center; align-self: center; width: 100%; height: 100%;">
+        <div>
+            <div style="font-family: Arial, Helvetica, sans-serif; text-align: center; width: 300px; color: white; font-size: 1.5rem;">Please draw the most important tool of Danckeldorm to continue ;)</div>
+            <canvas id="main" width="300" height="300"></canvas>
+            <br>
+            <div style="display: flex; justify-content: space-between; width: 300px;">
+                <button id="clear">clear</button>
+                <button id="check">check</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
+<script>
+  window.onload = function() {
+
+    document.ontouchmove = function(e){ e.preventDefault(); }
+    document.onmousemove = function(e) { e.preventDefault(); }
+
+    var canvas  = document.getElementById('main');
+    var canvastop = canvas.offsetTop
+    var canvasleft= canvas.offsetLeft
+
+    var context = canvas.getContext("2d");
+
+    var lastx;
+    var lasty;
+
+    context.strokeStyle = "#000000";
+    context.lineCap = 'round';
+    context.lineJoin = 'round';
+    context.lineWidth = 5;
+
+    function clear() {
+      context.fillStyle = "#ffffff";
+      context.rect(0, 0, 300, 300);
+      context.fill();
+    }
+
+    function dot(x,y) {
+      context.beginPath();
+      context.fillStyle = "#000000";
+      context.arc(x,y,1,0,Math.PI*2,true);
+      context.fill();
+      context.stroke();
+      context.closePath();
+    }
+
+    function line(fromx,fromy, tox,toy) {
+      context.beginPath();
+      context.moveTo(fromx, fromy);
+      context.lineTo(tox, toy);
+      context.stroke();
+      context.closePath();
+    }
+
+    function b64ToUint8Array(b64Image) {
+      var img = atob(b64Image.split(',')[1]);
+      var img_buffer = [];
+      var i = 0;
+      while (i < img.length) {
+          img_buffer.push(img.charCodeAt(i));
+          i++;
+      }
+      return new Uint8Array(img_buffer);
+    }
+
+    function showText(text) {
+      let textElem = document.getElementById('text');
+      textElem.classList.add('showText');
+      textElem.innerHTML = text;
+    }
+
+    function hideText() {
+      let text = document.getElementById('text');
+      text.classList.remove('showText');
+    }
+
+    function showDanckel(text) {
+      let danckel = document.getElementById('danckel');
+      danckel.classList.add('showDanckel');
+      danckel.classList.remove('hideDanckel');
+    }
+
+    function hideDanckel(text) {      
+      let danckel = document.getElementById('danckel');
+      danckel.classList.add('hideDanckel');
+      danckel.classList.remove('showDanckel');
+    }
+
+    function disableButtons() {
+      let clearButton = document.getElementById('clear')
+      clearButton.disabled = true;
+      clearButton.classList.add('disabled');
+
+      let checkButton = document.getElementById('check')
+      checkButton.disabled = true;
+      checkButton.classList.add('disabled');
+
+    }
+
+    function enableButtons() {
+      let clearButton = document.getElementById('clear')
+      clearButton.disabled = false;
+      clearButton.classList.remove('disabled');
+
+      let checkButton = document.getElementById('check')
+      checkButton.disabled = false;
+      checkButton.classList.remove('disabled');
+    }
+
+    let currentTimeout;
+
+
+    function check() {
+
+      if(currentTimeout) {
+        clearTimeout(currentTimeout);
+        currentTimeout = null;
+      }
+
+      disableButtons();
+      showDanckel();
+      showText("Let's see if you're right...");
+
+      var b64Image = canvas.toDataURL('image/jpeg');
+      var u8Image  = b64ToUint8Array(b64Image);
+
+      var data = new FormData();
+      
+      data.append("file", new Blob([ u8Image ], {type: "image/jpg"}));
+      var ajax = new XMLHttpRequest();
+      ajax.open("POST",'https://danckelmon.herokuapp.com/predict', true);
+      ajax.send(data);
+
+      ajax.addEventListener("abort", evt => {
+        // START
+        showDanckel()
+        showText("Ohh not interested anymore?");
+      });
+
+      ajax.addEventListener("error", evt => {
+        // ERROR
+        showDanckel()
+        showText("An error occured. Please try again!")
+
+        currentTimeout = setTimeout(() => {
+          hideDanckel();
+          hideText();
+          enableButtons();
+        }, 1500);
+      });
+
+      ajax.addEventListener("load", evt => {
+        console.log(evt);
+        let success = JSON.parse(evt.currentTarget.response);
+        if(success.prediction) {
+          showDanckel();
+          showText("You're right! Danckelmann is proud of you. I will let you pass");  
+          // redirect 
+          setTimeout(() => {
+            let param = success.p;
+            window.location.replace(`https://danckelmon.vercel.app/api/game?p=${param}`);
+          }, 2000);
+        } else {
+          showDanckel()
+          showText("That's wrong! Try again")
+
+          currentTimeout = setTimeout(() => {
+            hideDanckel();
+            hideText();
+            enableButtons();
+          }, 1500);
+        }
+        
+      });
+
+    }
+
+
+    canvas.ontouchstart = function(event){                   
+      event.preventDefault();                 
+      
+      lastx = event.touches[0].clientX - canvasleft;
+      lasty = event.touches[0].clientY - canvastop;
+
+      dot(lastx,lasty);
+    }
+
+    canvas.ontouchmove = function(event){                   
+      event.preventDefault();                 
+
+      var newx = event.touches[0].clientX - canvasleft;
+      var newy = event.touches[0].clientY - canvastop;
+
+      line(lastx,lasty, newx,newy);
+      
+      lastx = newx;
+      lasty = newy;
+    }
+
+    let mouseIsDown = false;
+    canvas.onmousedown = function(event){                   
+      mouseIsDown = true;
+      event.preventDefault();                 
+      
+      lastx = event.clientX - canvasleft;
+      lasty = event.clientY - canvastop;
+
+      dot(lastx,lasty);
+    }
+
+    canvas.onmousemove = function(event){        
+        if(mouseIsDown) {           
+            event.preventDefault();                 
+
+            var newx = event.clientX - canvasleft;
+            var newy = event.clientY - canvastop;
+
+            line(lastx,lasty, newx,newy);
+
+            lastx = newx;
+            lasty = newy;
+        }
+    }
+
+    canvas.onmouseup = function(event){                   
+      mouseIsDown = false;
+    }
+
+
+    let clearButton = document.getElementById('clear')
+    clearButton.onclick = clear
+
+    let checkLnk = document.getElementById('check');
+    checkLnk.addEventListener('click', check, false);
+
+    clear()
+
+  }
+
+</script>

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            canvas {
+                border: 1px solid black;
+                width: 300px;
+                height: 300px;
+            }
+        </style>
+    </head>
+    <body>
+        <canvas width="300" height="300" id="mycanvas"></canvas>
+        <a id="downloadLnk" download="YourFileName.jpg">Download as Image</a><br>
+        <a id="clear">clear</a>
+        <a id="check">check</a>
+    </body>
+</html>
+<script>
+    let counter = 106;
+    // create canvas element and append it to document body
+    var canvas = document.getElementById("mycanvas");
+
+    // some hotfixes... ( ≖_≖)
+    document.body.style.margin = 0;
+
+    // get canvas 2D context and set him correct size
+    var ctx = canvas.getContext('2d');
+    resize();
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // last known position
+    var pos = { x: 0, y: 0 };
+
+    window.addEventListener('resize', resize);
+    document.addEventListener('mousemove', draw);
+    document.addEventListener('mousedown', setPosition);
+    document.addEventListener('mouseenter', setPosition);
+
+    // new position from mouse event
+    function setPosition(e) {
+    pos.x = e.clientX;
+    pos.y = e.clientY;
+    }
+
+    // resize canvas
+    function resize() {
+    ctx.canvas.width = 300;
+    ctx.canvas.height = 300;
+    }
+
+    function draw(e) {
+    // mouse left button must be pressed
+    if (e.buttons !== 1) return;
+
+
+    ctx.beginPath(); // begin
+
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+
+    ctx.moveTo(pos.x, pos.y); // from
+    setPosition(e);
+    ctx.lineTo(pos.x, pos.y); // to
+
+    ctx.stroke(); // draw it!
+    }
+    // var canvas = document.getElementById("mycanvas");
+    // var img    = canvas.toDataURL("image/png");
+    // document.write('<img src="'+img+'"/>');
+
+    let downloadLnk = document.getElementById('downloadLnk');
+    function download() {
+        downloadLnk.setAttribute("download",`${counter}.jpg`)
+        var dt = canvas.toDataURL('image/jpeg');
+        this.href = dt;
+        counter++;
+        ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    };
+    downloadLnk.addEventListener('click', download, false);
+    
+    let clearLnk = document.getElementById('clear');
+
+    function clear() {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0,0,300,300);
+        ctx.fillStyle = "black";
+    }
+
+    function b64ToUint8Array(b64Image) {
+        var img = atob(b64Image.split(',')[1]);
+        var img_buffer = [];
+        var i = 0;
+        while (i < img.length) {
+            img_buffer.push(img.charCodeAt(i));
+            i++;
+        }
+        return new Uint8Array(img_buffer);
+    }
+
+    function drawAnimation(timestamp) {
+        if (start === undefined) start = timestamp;
+        const elapsed = timestamp - start;
+
+        ctx.fillStyle = "white";
+        ctx.fillRect(0,0,300,300);
+
+        if(elapsed < 3000) {
+            window.requestAnimationFrame(drawAnimation);
+        }
+
+    }
+
+    function check() {  
+        var b64Image = canvas.toDataURL('image/jpeg');
+        var u8Image  = b64ToUint8Array(b64Image);
+
+        var data = new FormData();
+        console.log(u8Image);
+        data.append("file", new Blob([ u8Image ], {type: "image/jpg"}));
+        var ajax = new XMLHttpRequest();
+        ajax.open("POST",'https://danckelmon.herokuapp.com/predict', true);
+        ajax.send(data);
+
+
+        window.requestAnimationFrame(drawAnimation);
+
+    }
+    let checkLnk = document.getElementById('check');
+    checkLnk.addEventListener('click', check, false);
+
+    clearLnk.addEventListener('click', clear, false);
+    clearLnk.addEventListener('click', clear, false);
+</script>
